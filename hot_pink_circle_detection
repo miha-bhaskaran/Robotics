@@ -1,0 +1,42 @@
+import numpy as np
+import cv2
+
+cap = cv2.VideoCapture(0)
+
+while(True):
+    # Capture frame-by-frame
+    ret, frame = cap.read()
+    output = frame.copy()
+
+    #mask for hotpink
+    blurred = cv2.GaussianBlur(output, (7, 7), 0)
+    hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+
+    lower_pink = np.array([160, 100, 100])
+    upper_pink = np.array([175, 255, 255])
+    mask = cv2.inRange(hsv, lower_pink, upper_pink)
+
+    #hsv mask
+    result = cv2.bitwise_and(frame, frame, mask=mask)
+
+    #larges connected component
+
+    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask, 8)
+
+    if num_labels > 1:
+        largest_label = 1 + np.argmax(stats[1:, cv2.CC_STAT_AREA])
+        #get index of largest area
+        x = stats[largest_label, cv2.CC_STAT_LEFT]
+        y = stats[largest_label, cv2.CC_STAT_TOP]
+        w = stats[largest_label, cv2.CC_STAT_WIDTH]
+        h = stats[largest_label, cv2.CC_STAT_HEIGHT]
+        cv2.rectangle(output, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    
+    cv2.imshow('result',result)
+    cv2.imshow('output', output)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
